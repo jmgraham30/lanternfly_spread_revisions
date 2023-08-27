@@ -38,6 +38,7 @@ data_to_map_166 <- data_to_map %>%
   filter(fips %in% data_2_temporal$fips)
 ```
 
+## The Data
 
 ```{r}
 glimpse(data_1)
@@ -68,6 +69,7 @@ dftm <- data_2_temporal %>%
 glimpse(dftm)
 ```
 
+## Initial Exploratory Plots
 
 ```{r}
 #| label: fig-figure-1
