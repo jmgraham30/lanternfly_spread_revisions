@@ -13,7 +13,7 @@ theme_set(theme_minimal(base_size = 12))
 # load the data
 
 ## 2021 only data
-data_1 <- read_csv("Data/data_1.csv")
+data_1 <- read_csv("data/data_1.csv")
 
 data_1 <- data_1 %>%
   mutate(pop_log = log10(pop),
@@ -22,7 +22,7 @@ data_1 <- data_1 %>%
 glimpse(data_1)
 
 ## all years
-data_2_temporal <- read_csv("Data/data_2_temporal.csv")
+data_2_temporal <- read_csv("data/data_2_temporal.csv")
 
 data_2_temporal <- data_2_temporal %>%
   mutate(pop_log = log10(pop),
@@ -32,7 +32,7 @@ glimpse(data_2_temporal)
 
 ## projections data
 
-data_to_map <- read_csv("./Data/data_to_map.csv")
+data_to_map <- read_csv("data/data_to_map.csv")
 
 data_to_map_166 <- data_to_map %>%
   filter(fips %in% data_2_temporal$fips)
