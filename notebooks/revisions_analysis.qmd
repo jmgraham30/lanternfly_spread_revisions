@@ -1,26 +1,138 @@
 ---
 title: "Analysis for Revisions"
-format: html
+format: 
+  html:
+    code-fold: true
 bibliography: revisions_analysis.bib
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+#| include: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(mgcv)
+library(gratia)
+library(DHARMa)
+
+theme_set(theme_minimal(base_size = 12))
+
+data_folder <- "../data"
+data_files <- paste0(data_folder,c("/data_1.csv","/data_2_temporal.csv","/data_to_map.csv","/data_to_map_21.csv"))
+
+data_1 <- read_csv(data_files[1])
+data_2_temporal <- read_csv(data_files[2])
+data_to_map <- read_csv(data_files[3])
+data_to_map_21 <- read_csv(data_files[4])
+
+data_1 <- data_1 %>%
+  mutate(pop_log = log10(pop),
+         infested = i21)
+
+data_2_temporal <- data_2_temporal %>%
+  mutate(pop_log = log10(pop),
+         year_zero = year - min(year))
+
+data_to_map_166 <- data_to_map %>%
+  filter(fips %in% data_2_temporal$fips)
 ```
 
-You can add options to executable code like this 
 
 ```{r}
-#| echo: false
-2 * 2
+glimpse(data_1)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+glimpse(data_2_temporal)
+```
+
+
+```{r}
+glimpse(data_to_map)
+```
+
+
+```{r}
+glimpse(data_to_map_21)
+```
+
+
+```{r}
+dftm <- data_2_temporal %>%
+  filter(year == 2021) %>%
+  select(infested,nps,nis,gc,pop_log,latitude_num,longitude_num,fips) %>%
+  right_join(.,data_to_map_166,by="fips")
+
+glimpse(dftm)
+```
+
+
+```{r}
+#| label: fig-figure-1
+#| fig-cap: Here's the caption
+
+dftm %>%
+  ggplot() +
+  geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
+               linewidth=0.2)  +
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  geom_point(aes(longitude_num,latitude_num,color=nps),size=2) + 
+  scale_color_continuous(low = "white", 
+                        high = "darkblue",
+                        limits = c(0,5)) + 
+  labs(x="",y="",title = "2021 Infestations per NPS")
+```
+
+
+```{r}
+#| label: fig-figure-2
+#| fig-cap: Here's the caption
+
+dftm %>%
+  ggplot() +
+  geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
+               linewidth=0.2)  +
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  geom_point(aes(longitude_num,latitude_num,color=nis),size=2) + 
+  scale_color_continuous(low = "white", 
+                         high = "darkblue",
+                         limits = c(0,3)) + 
+  labs(x="",y="",title = "2021 Infestations per NIS")
+```
+
+
+```{r}
+#| label: fig-figure-3
+#| fig-cap: Here's the caption
+
+dftm %>%
+  ggplot() +
+  geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
+               linewidth=0.2)  +
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  geom_point(aes(longitude_num,latitude_num,color=gc),size=2) + 
+  scale_color_continuous(low = "white", 
+                         high = "darkblue",
+                         limits = c(0,41)) + 
+  labs(x="",y="",title = "2021 Infestations per GC")
+```
+
+
+
+```{r}
+#| label: fig-figure-4
+#| fig-cap: Here's the caption
+
+dftm %>%
+  ggplot() +
+  geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
+               linewidth=0.2)  +
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  geom_point(aes(longitude_num,latitude_num,color=pop_log),size=2) + 
+  scale_color_continuous(low = "white", 
+                         high = "darkblue",
+                         limits = c(3,7)) + 
+  labs(x="",y="",title = "2021 Infestations per Pop (log)")
+```
