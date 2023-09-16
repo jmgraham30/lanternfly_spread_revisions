@@ -79,11 +79,11 @@ dftm <- data_14_21 %>%
 
 ```
 
-Here are the county maps as they were designated as infested or not in 2021:
+@fig-figure-1 displays the 2021 infestation status for the 166 Mid-Atlantic region counties in 2021:
 
 ```{r}
 #| label: fig-figure-1
-#| fig-cap: Here's the caption
+#| fig-cap: Spotted laternfly infested counties for 2021. 
 
 dftm %>%
   filter(year == "2021") %>%
