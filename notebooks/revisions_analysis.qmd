@@ -1,5 +1,5 @@
 ---
-title: "Analysis for Revisions"
+title: "Possible Analyses for Revisions"
 format: 
   html:
     code-fold: true
@@ -15,6 +15,7 @@ library(tidyverse)
 library(mgcv)
 library(gratia)
 library(DHARMa)
+library(kableExtra)
 
 theme_set(theme_minimal(base_size = 12))
 
@@ -36,46 +37,72 @@ data_2_temporal <- data_2_temporal %>%
 
 data_to_map_166 <- data_to_map %>%
   filter(fips %in% data_2_temporal$fips)
+
+data_14_21 <- data_2_temporal %>%
+  select(-latitude,-longitude,-region,-sid,-e_dist)
 ```
+
+
+## Overview
+
+Using data collected on infestation by the spotted laternfly across 166 counties in the Mid-Atlantic region of the United States, we are interested to know about factors that likely contribute to spread of the organism. Here, we focus on factors related to human activity and that can be directly targeted for control or mitigation measures. The factors we focus on are:
+
+* The number of businesses designated as garden centers in a county.
+
+* The number of two-digit interstate highways that transect a county.
+
+Further, we also examine the influence of the county population as previous work has established this as an important contributor to lanternfly spread. 
+
+To develop an appropriate model for examining the impact of the above factors, it is necessary to control for spatial autocorrelation. If the infestation is modeled over multiple years, both spatial and temporal autocorrelation need to be addressed. Two common approaches to dealing with such autocorrelation in ecological modeling and statistics are generalized additive models [@wood2003; @wood2017generalized] and blocked-bootstrapping [@efron2022computer]. 
 
 ## The Data
 
-```{r}
-glimpse(data_1)
-```
-
+The first few rows of the data collected appears as
 
 ```{r}
-glimpse(data_2_temporal)
+data_14_21 %>%
+  select(infested,year,county,state,nis,gc,pop) %>%
+  head() %>%
+  kable()
 ```
 
+For analysis, we add to this data the boundaries for all included counties.   
 
 ```{r}
-glimpse(data_to_map)
+data_to_map_166 <- data_to_map %>%
+  filter(fips %in% data_14_21$fips) %>%
+  select(fips,long,lat,group)
+
+dftm <- data_14_21 %>%
+  right_join(.,data_to_map_166,by="fips",
+             relationship = "many-to-many")
+
 ```
 
-
-```{r}
-glimpse(data_to_map_21)
-```
-
-
-```{r}
-dftm <- data_2_temporal %>%
-  filter(year == 2021) %>%
-  select(infested,nps,nis,gc,pop_log,latitude_num,longitude_num,fips) %>%
-  right_join(.,data_to_map_166,by="fips")
-
-glimpse(dftm)
-```
-
-## Initial Exploratory Plots
+Here are the county maps as they were designated as infested or not in 2021:
 
 ```{r}
 #| label: fig-figure-1
 #| fig-cap: Here's the caption
 
 dftm %>%
+  filter(year == "2021") %>%
+  ggplot() +
+  geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
+               linewidth=0.2)  +
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  labs(x="",y="",title = "2021 Infestations")
+```
+
+
+## Initial Exploratory Plots
+
+```{r}
+#| label: fig-figure-2
+#| fig-cap: Here's the caption
+
+dftm %>%
+  filter(year == "2021") %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
@@ -89,10 +116,11 @@ dftm %>%
 
 
 ```{r}
-#| label: fig-figure-2
+#| label: fig-figure-3
 #| fig-cap: Here's the caption
 
 dftm %>%
+  filter(year == "2021") %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
@@ -106,10 +134,11 @@ dftm %>%
 
 
 ```{r}
-#| label: fig-figure-3
+#| label: fig-figure-4
 #| fig-cap: Here's the caption
 
 dftm %>%
+  filter(year == "2021") %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
@@ -124,10 +153,11 @@ dftm %>%
 
 
 ```{r}
-#| label: fig-figure-4
+#| label: fig-figure-5
 #| fig-cap: Here's the caption
 
 dftm %>%
+  filter(year == "2021") %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
@@ -138,3 +168,37 @@ dftm %>%
                          limits = c(3,7)) + 
   labs(x="",y="",title = "2021 Infestations per Pop (log)")
 ```
+
+
+
+## References
+
+::: {#refs}
+:::
+
+
+:::{.callout-tip collapse="true"}
+## Expand for Session Info
+```{r}
+#| echo: false
+
+
+library(sessioninfo)
+# save the session info as an object
+pkg_sesh <- session_info(pkgs = "attached")
+
+# get the quarto version
+quarto_version <- system("quarto --version", intern = TRUE)
+
+# inject the quarto info
+pkg_sesh$platform$quarto <- paste(
+  system("quarto --version", intern = TRUE), 
+  "@", 
+  quarto::quarto_path()
+  )
+
+# print it out
+pkg_sesh
+```
+
+:::

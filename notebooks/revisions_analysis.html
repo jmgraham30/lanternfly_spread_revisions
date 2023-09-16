@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Analysis for Revisions</title>
+<title>Possible Analyses for Revisions</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -54,7 +54,26 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="revisions_analysis_files/libs/clipboard/clipboard.min.js"></script>
@@ -79,7 +98,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Analysis for Revisions</h1>
+<h1 class="title">Possible Analyses for Revisions</h1>
 </div>
 
 
@@ -94,183 +113,125 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>Using data collected on infestation by the spotted laternfly across 166 counties in the Mid-Atlantic region of the United States, we are interested to know about factors that likely contribute to spread of the organism. Here, we focus on factors related to human activity and that can be directly targeted for control or mitigation measures. The factors we focus on are:</p>
+<ul>
+<li><p>The number of businesses designated as garden centers in a county.</p></li>
+<li><p>The number of two-digit interstate highways that transect a county.</p></li>
+</ul>
+<p>Further, we also examine the influence of the county population as previous work has established this as an important contributor to lanternfly spread.</p>
+<p>To develop an appropriate model for examining the impact of the above factors, it is necessary to control for spatial autocorrelation. If the infestation is modeled over multiple years, both spatial and temporal autocorrelation need to be addressed. Two common approaches to dealing with such autocorrelation in ecological modeling and statistics are generalized additive models <span class="citation" data-cites="wood2003 wood2017generalized">(<a href="#ref-wood2003" role="doc-biblioref">S. N. Wood 2003</a>; <a href="#ref-wood2017generalized" role="doc-biblioref">Simon N. Wood 2017</a>)</span> and blocked-bootstrapping <span class="citation" data-cites="efron2022computer">(<a href="#ref-efron2022computer" role="doc-biblioref">Efron and Hastie 2022</a>)</span>.</p>
+</section>
 <section id="the-data" class="level2">
 <h2 class="anchored" data-anchor-id="the-data">The Data</h2>
+<p>The first few rows of the data collected appears as</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(data_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data_14_21 <span class="sc">%&gt;%</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(infested,year,county,state,nis,gc,pop) <span class="sc">%&gt;%</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 166
-Columns: 18
-$ i21          &lt;dbl&gt; 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, …
-$ nis          &lt;dbl&gt; 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 2, 1, 1, 2, 1, 1, …
-$ is_presence  &lt;dbl&gt; 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, …
-$ nps          &lt;dbl&gt; 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, …
-$ nps_presence &lt;dbl&gt; 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, …
-$ gc           &lt;dbl&gt; 39, 18, 30, 24, 12, 21, 16, 8, 23, 34, 19, 12, 19, 14, 29…
-$ pop          &lt;dbl&gt; 1477000, 1357000, 943332, 607186, 2253858, 2559903, 61879…
-$ latitude     &lt;dbl&gt; 40.94355, 40.72969, 41.22810, 39.86585, 40.65856, 40.6351…
-$ longitude    &lt;dbl&gt; -72.69222, -73.58938, -73.36676, -74.26303, -73.83793, -7…
-$ county       &lt;chr&gt; "suffolk", "nassau", "fairfield", "ocean", "queens", "kin…
-$ state        &lt;chr&gt; "NY", "NY", "CT", "NJ", "NY", "NY", "NJ", "NY", "NJ", "NJ…
-$ e_dist       &lt;dbl&gt; 6960.533, 7074.305, 7082.438, 7104.283, 7105.158, 7119.93…
-$ std_nis      &lt;dbl&gt; -1.0178954, -1.0178954, 1.3619727, -1.0178954, -1.0178954…
-$ std_nps      &lt;dbl&gt; 0.3654952, 0.3654952, 0.3654952, -0.6628472, -0.6628472, …
-$ std_gc       &lt;dbl&gt; 2.85625942, 0.56573254, 1.87460504, 1.22016879, -0.088703…
-$ std_pop      &lt;dbl&gt; 2.88197530, 2.59181140, 1.59154873, 0.77873678, 4.7604431…
-$ pop_log      &lt;dbl&gt; 6.169380, 6.132580, 5.974665, 5.783322, 6.352927, 6.40822…
-$ infested     &lt;dbl&gt; 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, …</code></pre>
+<div class="cell-output-display">
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;" data-quarto-table-cell-role="th">infested</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">year</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">county</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">state</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">nis</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">gc</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">pop</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">suffolk</td>
+<td style="text-align: left;">NY</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">39</td>
+<td style="text-align: right;">1477000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">nassau</td>
+<td style="text-align: left;">NY</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">1357000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">fairfield</td>
+<td style="text-align: left;">CT</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">943332</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">ocean</td>
+<td style="text-align: left;">NJ</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">607186</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">queens</td>
+<td style="text-align: left;">NY</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">2253858</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2014</td>
+<td style="text-align: left;">kings</td>
+<td style="text-align: left;">NY</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">2559903</td>
+</tr>
+</tbody>
+</table>
+
+
 </div>
 </div>
+<p>For analysis, we add to this data the boundaries for all included counties.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(data_2_temporal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>data_to_map_166 <span class="ot">&lt;-</span> data_to_map <span class="sc">%&gt;%</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(fips <span class="sc">%in%</span> data_14_21<span class="sc">$</span>fips) <span class="sc">%&gt;%</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(fips,long,lat,group)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>dftm <span class="ot">&lt;-</span> data_14_21 <span class="sc">%&gt;%</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(.,data_to_map_166,<span class="at">by=</span><span class="st">"fips"</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>             <span class="at">relationship =</span> <span class="st">"many-to-many"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 1,328
-Columns: 24
-$ fips          &lt;dbl&gt; 36103, 36059, 9001, 34029, 36081, 36047, 34025, 36005, 3…
-$ latitude      &lt;chr&gt; "+40.943554°", "+40.729687°", "+41.228103°", "+39.865850…
-$ longitude     &lt;chr&gt; "–72.692218°", "–73.589384°", "–73.366757°", "–74.263027…
-$ region        &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
-$ sid           &lt;dbl&gt; 63, 54, 1, 38, 58, 53, 36, 46, 24, 28, 68, 55, 59, 32, 5…
-$ county        &lt;chr&gt; "suffolk", "nassau", "fairfield", "ocean", "queens", "ki…
-$ state         &lt;chr&gt; "NY", "NY", "CT", "NJ", "NY", "NY", "NJ", "NY", "NJ", "N…
-$ nis           &lt;dbl&gt; 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 2, 1, 1, 2, 1, 1,…
-$ is_presence   &lt;dbl&gt; 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1,…
-$ gc            &lt;dbl&gt; 39, 18, 30, 24, 12, 21, 16, 8, 23, 34, 19, 12, 19, 14, 2…
-$ nps           &lt;dbl&gt; 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1,…
-$ nps_presence  &lt;dbl&gt; 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1,…
-$ pop           &lt;dbl&gt; 1477000, 1357000, 943332, 607186, 2253858, 2559903, 6187…
-$ latitude_num  &lt;dbl&gt; 40.94355, 40.72969, 41.22810, 39.86585, 40.65856, 40.635…
-$ longitude_num &lt;dbl&gt; -72.69222, -73.58938, -73.36676, -74.26303, -73.83793, -…
-$ e_dist        &lt;dbl&gt; 6960.533, 7074.305, 7082.438, 7104.283, 7105.158, 7119.9…
-$ std_nis       &lt;dbl&gt; -1.0178954, -1.0178954, 1.3619727, -1.0178954, -1.017895…
-$ std_nps       &lt;dbl&gt; 0.3654952, 0.3654952, 0.3654952, -0.6628472, -0.6628472,…
-$ std_gc        &lt;dbl&gt; 2.85625942, 0.56573254, 1.87460504, 1.22016879, -0.08870…
-$ std_pop       &lt;dbl&gt; 2.88197530, 2.59181140, 1.59154873, 0.77873678, 4.760443…
-$ infested      &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ year          &lt;dbl&gt; 2014, 2014, 2014, 2014, 2014, 2014, 2014, 2014, 2014, 20…
-$ pop_log       &lt;dbl&gt; 6.169380, 6.132580, 5.974665, 5.783322, 6.352927, 6.4082…
-$ year_zero     &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…</code></pre>
 </div>
-</div>
+<p>Here are the county maps as they were designated as infested or not in 2021:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(data_to_map)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 35,447
-Columns: 19
-$ fips        &lt;dbl&gt; 9001, 9001, 9001, 9001, 9001, 9001, 9001, 9001, 9001, 9001…
-$ county      &lt;chr&gt; "fairfield", "fairfield", "fairfield", "fairfield", "fairf…
-$ state       &lt;chr&gt; "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct"…
-$ i14         &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
-$ i15         &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
-$ i16         &lt;dbl&gt; 0.009, 0.009, 0.009, 0.009, 0.009, 0.009, 0.009, 0.009, 0.…
-$ i17         &lt;dbl&gt; 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04…
-$ i18         &lt;dbl&gt; 0.091, 0.091, 0.091, 0.091, 0.091, 0.091, 0.091, 0.091, 0.…
-$ i19         &lt;dbl&gt; 0.173, 0.173, 0.173, 0.173, 0.173, 0.173, 0.173, 0.173, 0.…
-$ i20         &lt;dbl&gt; 0.315, 0.315, 0.315, 0.315, 0.315, 0.315, 0.315, 0.315, 0.…
-$ i21         &lt;dbl&gt; 0.51, 0.51, 0.51, 0.51, 0.51, 0.51, 0.51, 0.51, 0.51, 0.51…
-$ i22         &lt;dbl&gt; 0.685, 0.685, 0.685, 0.685, 0.685, 0.685, 0.685, 0.685, 0.…
-$ i23         &lt;dbl&gt; 0.842, 0.842, 0.842, 0.842, 0.842, 0.842, 0.842, 0.842, 0.…
-$ i24         &lt;dbl&gt; 0.926, 0.926, 0.926, 0.926, 0.926, 0.926, 0.926, 0.926, 0.…
-$ i25         &lt;dbl&gt; 0.976, 0.976, 0.976, 0.976, 0.976, 0.976, 0.976, 0.976, 0.…
-$ long        &lt;dbl&gt; -73.72777, -73.69595, -73.63967, -73.63215, -73.56494, -73…
-$ lat         &lt;dbl&gt; 41.10070, 41.11543, 41.14149, 41.14492, 41.17517, 41.19843…
-$ group       &lt;chr&gt; "09001.1", "09001.1", "09001.1", "09001.1", "09001.1", "09…
-$ county_fips &lt;chr&gt; "09001", "09001", "09001", "09001", "09001", "09001", "090…</code></pre>
-</div>
-</div>
-<div class="cell">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(data_to_map_21)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 11,412
-Columns: 17
-$ fips         &lt;dbl&gt; 9001, 9001, 9001, 9001, 9001, 9001, 9001, 9001, 9001, 900…
-$ region       &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ sid          &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ county       &lt;chr&gt; "fairfield", "fairfield", "fairfield", "fairfield", "fair…
-$ state        &lt;chr&gt; "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct", "ct…
-$ nis          &lt;dbl&gt; 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, …
-$ is_presence  &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ gc           &lt;dbl&gt; 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 3…
-$ nps          &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ nps_presence &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ pop          &lt;dbl&gt; 943332, 943332, 943332, 943332, 943332, 943332, 943332, 9…
-$ i21          &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-$ long         &lt;dbl&gt; -73.72777, -73.69595, -73.63967, -73.63215, -73.56494, -7…
-$ lat          &lt;dbl&gt; 41.10070, 41.11543, 41.14149, 41.14492, 41.17517, 41.1984…
-$ group        &lt;chr&gt; "09001.1", "09001.1", "09001.1", "09001.1", "09001.1", "0…
-$ county_fips  &lt;chr&gt; "09001", "09001", "09001", "09001", "09001", "09001", "09…
-$ pop_log      &lt;dbl&gt; 5.974665, 5.974665, 5.974665, 5.974665, 5.974665, 5.97466…</code></pre>
-</div>
-</div>
-<div class="cell">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="ot">&lt;-</span> data_2_temporal <span class="sc">%&gt;%</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2021</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(infested,nps,nis,gc,pop_log,latitude_num,longitude_num,fips) <span class="sc">%&gt;%</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(.,data_to_map_166,<span class="at">by=</span><span class="st">"fips"</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(dftm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 11,412
-Columns: 26
-$ infested      &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ nps           &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
-$ nis           &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ gc            &lt;dbl&gt; 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, …
-$ pop_log       &lt;dbl&gt; 6.16938, 6.16938, 6.16938, 6.16938, 6.16938, 6.16938, 6.…
-$ latitude_num  &lt;dbl&gt; 40.94355, 40.94355, 40.94355, 40.94355, 40.94355, 40.943…
-$ longitude_num &lt;dbl&gt; -72.69222, -72.69222, -72.69222, -72.69222, -72.69222, -…
-$ fips          &lt;dbl&gt; 36103, 36103, 36103, 36103, 36103, 36103, 36103, 36103, …
-$ county        &lt;chr&gt; "suffolk", "suffolk", "suffolk", "suffolk", "suffolk", "…
-$ state         &lt;chr&gt; "ny", "ny", "ny", "ny", "ny", "ny", "ny", "ny", "ny", "n…
-$ i14           &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ i15           &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ i16           &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-$ i17           &lt;dbl&gt; 0.006, 0.006, 0.006, 0.006, 0.006, 0.006, 0.006, 0.006, …
-$ i18           &lt;dbl&gt; 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, 0.027, …
-$ i19           &lt;dbl&gt; 0.083, 0.083, 0.083, 0.083, 0.083, 0.083, 0.083, 0.083, …
-$ i20           &lt;dbl&gt; 0.202, 0.202, 0.202, 0.202, 0.202, 0.202, 0.202, 0.202, …
-$ i21           &lt;dbl&gt; 0.368, 0.368, 0.368, 0.368, 0.368, 0.368, 0.368, 0.368, …
-$ i22           &lt;dbl&gt; 0.546, 0.546, 0.546, 0.546, 0.546, 0.546, 0.546, 0.546, …
-$ i23           &lt;dbl&gt; 0.702, 0.702, 0.702, 0.702, 0.702, 0.702, 0.702, 0.702, …
-$ i24           &lt;dbl&gt; 0.841, 0.841, 0.841, 0.841, 0.841, 0.841, 0.841, 0.841, …
-$ i25           &lt;dbl&gt; 0.912, 0.912, 0.912, 0.912, 0.912, 0.912, 0.912, 0.912, …
-$ long          &lt;dbl&gt; -73.49664, -73.49177, -73.48537, -73.47836, -73.46371, -…
-$ lat           &lt;dbl&gt; 40.92348, 40.94210, 40.94640, 40.94230, 40.93770, 40.934…
-$ group         &lt;chr&gt; "36103.1", "36103.1", "36103.1", "36103.1", "36103.1", "…
-$ county_fips   &lt;chr&gt; "36103", "36103", "36103", "36103", "36103", "36103", "3…</code></pre>
-</div>
-</div>
-</section>
-<section id="initial-exploratory-plots" class="level2">
-<h2 class="anchored" data-anchor-id="initial-exploratory-plots">Initial Exploratory Plots</h2>
-<div class="cell">
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>nps),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                        <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">5</span>)) <span class="sc">+</span> </span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per NPS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-figure-1" class="quarto-figure quarto-figure-center anchored">
@@ -281,19 +242,23 @@ $ county_fips   &lt;chr&gt; "36103", "36103", "36103", "36103", "36103", "36103"
 </div>
 </div>
 </div>
+</section>
+<section id="initial-exploratory-plots" class="level2">
+<h2 class="anchored" data-anchor-id="initial-exploratory-plots">Initial Exploratory Plots</h2>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>nis),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">3</span>)) <span class="sc">+</span> </span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per NIS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>nps),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                        <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                        <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">5</span>)) <span class="sc">+</span> </span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per NPS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-figure-2" class="quarto-figure quarto-figure-center anchored">
@@ -307,16 +272,17 @@ $ county_fips   &lt;chr&gt; "36103", "36103", "36103", "36103", "36103", "36103"
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>gc),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">41</span>)) <span class="sc">+</span> </span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per GC"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>nis),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">3</span>)) <span class="sc">+</span> </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per NIS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-figure-3" class="quarto-figure quarto-figure-center anchored">
@@ -330,16 +296,17 @@ $ county_fips   &lt;chr&gt; "36103", "36103", "36103", "36103", "36103", "36103"
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>pop_log),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">7</span>)) <span class="sc">+</span> </span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per Pop (log)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>gc),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">41</span>)) <span class="sc">+</span> </span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per GC"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-figure-4" class="quarto-figure quarto-figure-center anchored">
@@ -347,6 +314,99 @@ $ county_fips   &lt;chr&gt; "36103", "36103", "36103", "36103", "36103", "36103"
 <p><img src="revisions_analysis_files/figure-html/fig-figure-4-1.png" class="img-fluid figure-img" width="672"></p>
 <figcaption class="figure-caption">Figure&nbsp;4: Here’s the caption</figcaption>
 </figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>dftm <span class="sc">%&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="st">"2021"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_polygon</span>(<span class="at">mapping =</span> <span class="fu">aes</span>(long, lat, <span class="at">group=</span>group,<span class="at">fill=</span><span class="fu">factor</span>(infested)),<span class="at">color=</span><span class="st">"black"</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">linewidth=</span><span class="fl">0.2</span>)  <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_discrete</span>(<span class="at">name=</span><span class="st">"Infested"</span>,<span class="at">type=</span><span class="fu">c</span>(<span class="st">"white"</span>,<span class="st">"lightgreen"</span>)) <span class="sc">+</span> </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(longitude_num,latitude_num,<span class="at">color=</span>pop_log),<span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_continuous</span>(<span class="at">low =</span> <span class="st">"white"</span>, </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">high =</span> <span class="st">"darkblue"</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">7</span>)) <span class="sc">+</span> </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x=</span><span class="st">""</span>,<span class="at">y=</span><span class="st">""</span>,<span class="at">title =</span> <span class="st">"2021 Infestations per Pop (log)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-figure-5" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="revisions_analysis_files/figure-html/fig-figure-5-1.png" class="img-fluid figure-img" width="672"></p>
+<figcaption class="figure-caption">Figure&nbsp;5: Here’s the caption</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-efron2022computer" class="csl-entry" role="listitem">
+Efron, Bradley, and Trevor Hastie. 2022. <span>“Computer Age Statistical Inference.”</span>
+</div>
+<div id="ref-wood2003" class="csl-entry" role="listitem">
+Wood, S. N. 2003. <span>“Thin-Plate Regression Splines.”</span> <em>Journal of the Royal Statistical Society (B)</em> 65 (1): 95–114.
+</div>
+<div id="ref-wood2017generalized" class="csl-entry" role="listitem">
+Wood, Simon N. 2017. <em>Generalized Additive Models: An Introduction with r</em>. CRC press.
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Expand for Session Info
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>─ Session info ───────────────────────────────────────────────────────────────
+ setting  value
+ version  R version 4.3.1 (2023-06-16)
+ os       macOS Ventura 13.5.2
+ system   aarch64, darwin20
+ ui       X11
+ language (EN)
+ collate  en_US.UTF-8
+ ctype    en_US.UTF-8
+ tz       America/New_York
+ date     2023-09-16
+ pandoc   3.1.1 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/ (via rmarkdown)
+ quarto   1.3.450 @ /usr/local/bin/quarto
+
+─ Packages ───────────────────────────────────────────────────────────────────
+ package     * version  date (UTC) lib source
+ DHARMa      * 0.4.6    2022-09-08 [1] CRAN (R 4.3.0)
+ dplyr       * 1.1.3    2023-09-03 [1] CRAN (R 4.3.0)
+ forcats     * 1.0.0    2023-01-29 [1] CRAN (R 4.3.0)
+ ggplot2     * 3.4.3    2023-08-14 [1] CRAN (R 4.3.0)
+ gratia      * 0.8.1.34 2023-07-02 [1] Github (gavinsimpson/gratia@f967268)
+ kableExtra  * 1.3.4    2021-02-20 [1] CRAN (R 4.3.0)
+ lubridate   * 1.9.2    2023-02-10 [1] CRAN (R 4.3.0)
+ mgcv        * 1.9-0    2023-07-11 [1] CRAN (R 4.3.0)
+ nlme        * 3.1-163  2023-08-09 [1] CRAN (R 4.3.0)
+ purrr       * 1.0.2    2023-08-10 [1] CRAN (R 4.3.0)
+ readr       * 2.1.4    2023-02-10 [1] CRAN (R 4.3.0)
+ sessioninfo * 1.2.2    2021-12-06 [1] CRAN (R 4.3.0)
+ stringr     * 1.5.0    2022-12-02 [1] CRAN (R 4.3.0)
+ tibble      * 3.2.1    2023-03-20 [1] CRAN (R 4.3.0)
+ tidyr       * 1.3.0    2023-01-24 [1] CRAN (R 4.3.0)
+ tidyverse   * 2.0.0    2023-02-22 [1] CRAN (R 4.3.0)
+
+ [1] /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/library
+
+──────────────────────────────────────────────────────────────────────────────</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
