@@ -98,8 +98,9 @@ dftm %>%
 ## Initial Exploratory Plots
 
 ```{r}
+#| include: false
 #| label: fig-figure-2
-#| fig-cap: Here's the caption
+#| fig-cap: Spotted laternfly infested counties for 2021 together with the numper of national parks in the county.
 
 dftm %>%
   filter(year == "2021") %>%
@@ -117,7 +118,7 @@ dftm %>%
 
 ```{r}
 #| label: fig-figure-3
-#| fig-cap: Here's the caption
+#| fig-cap: Spotted laternfly infested counties for 2021 together with the number of two-digit interstate highways transecting the counties.
 
 dftm %>%
   filter(year == "2021") %>%
@@ -135,7 +136,7 @@ dftm %>%
 
 ```{r}
 #| label: fig-figure-4
-#| fig-cap: Here's the caption
+#| fig-cap: Spotted laternfly infested counties for 2021 together with the number of garden centers in the counties.
 
 dftm %>%
   filter(year == "2021") %>%
@@ -154,7 +155,7 @@ dftm %>%
 
 ```{r}
 #| label: fig-figure-5
-#| fig-cap: Here's the caption
+#| fig-cap: Spotted laternfly infested counties for 2021 together with the 2019 estimated population (log scale) for the counties.
 
 dftm %>%
   filter(year == "2021") %>%
