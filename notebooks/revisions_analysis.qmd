@@ -3,6 +3,8 @@ title: "Possible Analyses for Revisions"
 format: 
   html:
     code-fold: true
+    toc: true
+    embed-resources: true
 bibliography: revisions_analysis.bib
 ---
 
