@@ -14,7 +14,7 @@ bibliography: revisions_analysis.bib
 library(tidyverse)
 library(mgcv)
 library(gratia)
-library(broom)
+library(broom.mixed)
 library(kableExtra)
 library(DHARMa)
 
@@ -56,7 +56,7 @@ Using data collected on infestation by the spotted laternfly across 166 counties
 
 Further, we also examine the influence of the county population as previous work has established this as an important contributor to lanternfly spread. 
 
-To develop an appropriate model for examining the impact of the above factors, it is necessary to control for spatial autocorrelation. If the infestation is modeled over multiple years, both spatial and temporal autocorrelation need to be addressed. Two common approaches to dealing with such autocorrelation in ecological modeling and statistics are generalized additive models [@wood2003; @wood2017generalized] and blocked-bootstrapping [@efron2022computer]. 
+A reasonable question: does the data provide evidence that the transportation of materials sold at garden centers over interstate highways contribute to the spread of the spotted laternfly? 
 
 ## The Data
 
@@ -65,6 +65,7 @@ To develop an appropriate model for examining the impact of the above factors, i
 ```{r}
 #| label: tbl-data
 #| tbl-cap: Data collected for the 166 county Mid-Atlantic region.
+#| echo: false
 
 
 data_14_21 %>%
@@ -77,6 +78,8 @@ data_14_21 %>%
 For analysis, we add to this data the boundaries for all included counties.   
 
 ```{r}
+#| include: false
+
 data_to_map_166 <- data_to_map %>%
   filter(fips %in% data_14_21$fips) %>%
   select(fips,long,lat,group)
@@ -90,6 +93,7 @@ dftm <- data_14_21 %>%
 @fig-figure-1 displays the 2021 infestation status for the 166 Mid-Atlantic region counties in 2021:
 
 ```{r}
+#| echo: false
 #| label: fig-figure-1
 #| fig-cap: Counties in the defined Mid-Atlantic regions that were designated as infested by the spotted laternfly in 2021. 
 
@@ -109,18 +113,21 @@ dftm %>%
 
 
 ```{r}
+#| echo: false
 #| label: tbl-infestations
 #| tbl-cap: The number of counties per year in the defined Mid-Atlantic region of 166 that were listed as infected.
 
 data_14_21 %>%
   group_by(year) %>%
   summarise(number_infested = sum(infested)) %>%
+  rename(Year = year, `Number Infested` = number_infested) %>%
   kable()
 ```
 
 
 
 ```{r}
+#| echo: false
 #| include: false
 #| label: fig-figure-2
 #| fig-cap: Spotted laternfly infested counties for 2021 together with the numper of national parks in the county.
@@ -142,6 +149,7 @@ dftm %>%
 @fig-figure-3 shows the 166 counties in the defined Mid-Atlantic region together with their 2021 infestation status and the number of two-digit interstate highways that transect the county.
 
 ```{r}
+#| echo: false
 #| label: fig-figure-3
 #| fig-cap: Spotted laternfly infested counties for 2021 together with the number of two-digit interstate highways transecting the counties.
 
@@ -162,6 +170,7 @@ dftm %>%
 @fig-figure-4 shows the 166 counties in the defined Mid-Atlantic region together with their 2021 infestation status and the number of garden centers in the county.
 
 ```{r}
+#| echo: false
 #| label: fig-figure-4
 #| fig-cap: Spotted laternfly infested counties for 2021 together with the number of garden centers in the counties.
 
@@ -181,6 +190,7 @@ dftm %>%
 @fig-figure-5 shows the 166 counties in the defined Mid-Atlantic region together with their 2021 infestation status and the county population on the log scale as estimated in 2019.
 
 ```{r}
+#| echo: false
 #| label: fig-figure-5
 #| fig-cap: Spotted laternfly infested counties for 2021 together with the 2019 estimated population (log scale) for the counties.
 
@@ -202,12 +212,12 @@ dftm %>%
 
 
 ```{r}
+#| echo: false
 #| label: fig-figure-6
 #| fig-cap: Spotted laternfly infested counties for 2021 together with the presence/absence of two-digit interstate highways and the number of garden center per county.
 
 dftm %>%
   filter(year == "2021") %>%
-  mutate(is_presence = ifelse(is_presence==1,"Yes","No")) %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=is_presence),color="black",
                linewidth=0.2)  +
@@ -220,11 +230,10 @@ dftm %>%
 
 ```
 
-## Data Analysis
+## Statistical Analysis
 
 
-
-### 2021 Data Only
+For a statistical test of our hypothesis, we have use R version 4.3.1 and package `mgcv` to fit a generalized additive model [@rcore; @wood2003; @wood2017generalized]. Specifically, we model the log odds of county infestation in 2021 with tensor product smoothing for longitude and latitude to control for spatial autocorrelation with linear predictors: presence/absence of two-digit interstate highway, number of garden centers, 2019 county population, and an interaction term for presence/absence of two-digit interstate highway and number of garden centers. To deal with issues of convergence and variables of different scale, we log transformed the population and centered and scaled the number of garden centers. We used the packages `DHARMa` and `gratia` for diagnostics of model assumptions  [@dharma2022 ; @gratia2023].
 
 ```{r}
 #| code-fold: false
@@ -236,7 +245,6 @@ gam_mod_21 <- gam(mod_form_21,data=data_1,
                       family = binomial(),
                       method = "REML")
 ```
-
 
 
 ```{r}
@@ -257,13 +265,41 @@ testSpatialAutocorrelation(full_res,x=data_1$longitude,y=data_1$latitude) # spat
 ```
 
 
-
-### 2014 - 2021 Data
+@tbl-mod-summ summarizes the estimated coefficients for the linear predictors in the generalized additive model. 
 
 ```{r}
-#| code-fold: false
+#| echo: false
+#| label: tbl-mod-summ
+#| tbl-cap: Summary table for estimates for linear terms in generalized additive model. 
 
-mod_form_14_21 <- infested ~ is_presence + std_gc + is_presence:std_gc + pop_log +
+gam_mod_21_summ <- summary(gam_mod_21)
+
+results_df <- tibble(Coefficient = c("Intercept","IS Presence - Yes","Garden Centers","Pop (log)","IS Presence - Yes : Garden Centers"),
+                     Estimate = gam_mod_21_summ$p.coeff,
+                     SE = gam_mod_21_summ$se[1:5],
+                     `p-value` = gam_mod_21_summ$p.pv)
+
+results_df %>%
+  kable()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#| include: false
+
+mod_form_14_21 <- infested ~ is_presence + std_gc + is_presence:std_gc +
   s(year_zero,k=8) + te(longitude_num,latitude_num)
 
 gam_mod_14_21 <- gam(mod_form_14_21,data=data_2_temporal,
