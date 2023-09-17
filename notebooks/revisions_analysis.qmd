@@ -35,7 +35,8 @@ data_1 <- data_1 %>%
 
 data_2_temporal <- data_2_temporal %>%
   mutate(pop_log = log10(pop),
-         year_zero = year - min(year))
+         year_zero = year - min(year),
+         is_presence = ifelse(is_presence == 0, "No","Yes"))
 
 data_to_map_166 <- data_to_map %>%
   filter(fips %in% data_2_temporal$fips)
@@ -259,7 +260,35 @@ testSpatialAutocorrelation(full_res,x=data_1$longitude,y=data_1$latitude) # spat
 
 ### 2014 - 2021 Data
 
+```{r}
+#| code-fold: false
 
+mod_form_14_21 <- infested ~ is_presence + std_gc + is_presence:std_gc + pop_log +
+  s(year_zero,k=8) + te(longitude_num,latitude_num)
+
+gam_mod_14_21 <- gam(mod_form_14_21,data=data_2_temporal,
+                      family = binomial(),
+                      method = "REML")
+```
+
+
+
+```{r}
+#| include: false
+
+# model diagnostics
+
+# DHARMa residuals
+full_res <- simulateResiduals(gam_mod_14_21)
+
+plot(full_res) # residuals look good
+
+appraise(gam_mod_14_21) # residuals look good
+
+acf(residuals(gam_mod_14_21)) # no temporal autocorrelation
+
+#testSpatialAutocorrelation(full_res,x=data_1$longitude,y=data_1$latitude) # spatial autocorrelation
+```
 
 
 ## References
