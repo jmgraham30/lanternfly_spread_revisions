@@ -19,6 +19,10 @@ library(gratia)
 library(broom.mixed)
 library(kableExtra)
 library(DHARMa)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(scales)
 
 theme_set(theme_minimal(base_size = 12))
 
@@ -235,6 +239,8 @@ dftm %>%
 ## Statistical Analysis
 
 
+### 2021 Only Data
+
 For a statistical test of our hypothesis, we have use R version 4.3.1 and package `mgcv` to fit a generalized additive model [@rcore; @wood2003; @wood2017generalized]. Specifically, we model the log odds of county infestation in 2021 with tensor product smoothing for longitude and latitude to control for spatial autocorrelation with linear predictors: presence/absence of two-digit interstate highway, number of garden centers, 2019 county population, and an interaction term for presence/absence of two-digit interstate highway and number of garden centers. To deal with issues of convergence and variables of different scale, we log transformed the population and centered and scaled the number of garden centers. We used the packages `DHARMa` and `gratia` for diagnostics of model assumptions  [@dharma2022 ; @gratia2023].
 
 ```{r}
@@ -267,16 +273,43 @@ testSpatialAutocorrelation(full_res,x=data_1$longitude,y=data_1$latitude) # spat
 ```
 
 
+```{r}
+#| label: fig-estimates
+#| fig-cap: Estimated coefficients for the linear predictors in the generalized additive model. Results are on the scale of odds ratio.
+
+
+gam_mod_21_ests <- plot_model(gam_mod_21)$data %>%
+  tibble() %>%
+  mutate(coeff = factor(c("Interstate Presence (Yes)","Garden Centers","Population","Interstate Presence (Yes) : Garden Centers"),levels=c("Interstate Presence (Yes) : Garden Centers","Population","Garden Centers","Interstate Presence (Yes)")))
+
+gam_mod_21_ests %>%
+  ggplot(aes(x=log(estimate),y=coeff)) + 
+  geom_point(size=3) + 
+  geom_errorbar(aes(xmin=log(conf.low), xmax=log(conf.high)), 
+                width=0.0,
+                 position=position_dodge(0.05),linewidth=1) +
+  annotate(geom = "text", x = log(3.34)+0.1,y=4.2,label="p-value=0.054") +
+  annotate(geom = "text", x = log(0.276),y=3.2,label="p-value=0.041") +
+  annotate(geom = "text", x = log(5.37),y=2.2,label="p-value=0.046") +
+  annotate(geom = "text", x = log(7.10),y=1.2,label="p-value=0.005") +
+    scale_x_continuous(breaks = log(c(0.01,0.1,1.0,10.0,100.0)), 
+                       labels = c(0.01,0.1,1.0,10.0,100.0),
+                       limits = log(c(0.01,100.0))) + 
+  labs(x = "Odds Ratio", y = "", title = "Parametric estimates for infestation") + 
+  geom_vline(xintercept = 0.0,linetype="dashed")
+
+```
+
 @tbl-mod-summ summarizes the estimated coefficients for the linear predictors in the generalized additive model. 
 
 ```{r}
 #| echo: false
 #| label: tbl-mod-summ
-#| tbl-cap: Summary table for estimates for linear terms in generalized additive model. 
+#| tbl-cap: Summary table for estimates for linear terms in generalized additive model. Results are on the log odds scale.
 
 gam_mod_21_summ <- summary(gam_mod_21)
 
-results_df <- tibble(Coefficient = c("Intercept","IS Presence - Yes","Garden Centers","Pop (log)","IS Presence - Yes : Garden Centers"),
+results_df <- tibble(Coefficient = c("Intercept","Interstate Presence - Yes","Garden Centers","Population (log)","Interstate Presence - Yes : Garden Centers"),
                      Estimate = gam_mod_21_summ$p.coeff,
                      SE = gam_mod_21_summ$se[1:5],
                      `p-value` = gam_mod_21_summ$p.pv)
@@ -287,45 +320,31 @@ results_df %>%
 ```
 
 
-
-
-
-
-
-
-
-
-
+### Infestation Trend Over Time
 
 
 ```{r}
-#| include: false
+#| code-fold: false
 
-mod_form_14_21 <- infested ~ is_presence + std_gc + is_presence:std_gc +
-  s(year_zero,k=8) + te(longitude_num,latitude_num)
+mod_form <- infested ~ is_presence + std_gc + is_presence:std_gc + pop_log + 
+   s(year_zero,k=8) + te(longitude_num,latitude_num)
 
-gam_mod_14_21 <- gam(mod_form_14_21,data=data_2_temporal,
+gam_mod <- gam(mod_form,data=data_14_21,
                       family = binomial(),
                       method = "REML")
 ```
 
 
+````{r}
+mod_smooth_estimates <- smooth_estimates(gam_mod) %>%
+  filter(smooth == "s(year_zero)")
+
+mod_smooth_estimates_der <- derivatives(gam_mod,term = "s(year_zero)")
+```
+
 
 ```{r}
-#| include: false
 
-# model diagnostics
-
-# DHARMa residuals
-full_res <- simulateResiduals(gam_mod_14_21)
-
-plot(full_res) # residuals look good
-
-appraise(gam_mod_14_21) # residuals look good
-
-acf(residuals(gam_mod_14_21)) # no temporal autocorrelation
-
-#testSpatialAutocorrelation(full_res,x=data_1$longitude,y=data_1$latitude) # spatial autocorrelation
 ```
 
 
