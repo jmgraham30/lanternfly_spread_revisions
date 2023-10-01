@@ -108,8 +108,8 @@ dftm %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
-  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
-  labs(x="",y="",title = "2021 Infestations")
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen"),labels=c("No","Yes")) + 
+  labs(x="Longitude",y="Latitude",title = "2021 Infestations")
 ```
 
 
@@ -143,7 +143,9 @@ dftm %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
-  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  scale_fill_discrete(name="Infested",
+                      type=c("white","lightgreen"),
+                      labels=c("No","Yes")) + 
   geom_point(aes(longitude_num,latitude_num,color=nps),size=2) + 
   scale_color_continuous(low = "white", 
                         high = "darkblue",
@@ -164,12 +166,14 @@ dftm %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
-  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  scale_fill_discrete(name="Infested",
+                      type=c("white","lightgreen"),
+                      labels=c("No","Yes")) + 
   geom_point(aes(longitude_num,latitude_num,color=nis),size=2) + 
   scale_color_continuous(low = "white", 
                          high = "darkblue",
                          limits = c(0,3)) + 
-  labs(x="",y="",title = "2021 Infestations per NIS")
+  labs(x="Longitude",y="Latitude",title = "2021 Infestations per number of interstates",color="Interstates")
 ```
 
 
@@ -185,12 +189,13 @@ dftm %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
-  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen"),labels=c("No","Yes")) + 
   geom_point(aes(longitude_num,latitude_num,color=gc),size=2) + 
   scale_color_continuous(low = "white", 
                          high = "darkblue",
                          limits = c(0,41)) + 
-  labs(x="",y="",title = "2021 Infestations per GC")
+  labs(x="Longitude",y="Latitude",title = "2021 Infestations per number of garden centers",
+       color="Garden \n Centers")
 ```
 
 @fig-figure-5 shows the 166 counties in the defined Mid-Atlantic region together with their 2021 infestation status and the county population on the log scale as estimated in 2019.
@@ -205,12 +210,12 @@ dftm %>%
   ggplot() +
   geom_polygon(mapping = aes(long, lat, group=group,fill=factor(infested)),color="black",
                linewidth=0.2)  +
-  scale_fill_discrete(name="Infested",type=c("white","lightgreen")) + 
+  scale_fill_discrete(name="Infested",type=c("white","lightgreen"),labels=c("No","Yes")) + 
   geom_point(aes(longitude_num,latitude_num,color=pop_log),size=2) + 
   scale_color_continuous(low = "white", 
                          high = "darkblue",
                          limits = c(3,7)) + 
-  labs(x="",y="",title = "2021 Infestations per Pop (log)")
+  labs(x="",y="",title = "2021 Infestations per population (log)")
 ```
 
 
@@ -232,7 +237,8 @@ dftm %>%
   scale_color_continuous(low = "white", 
                          high = "darkblue",
                          limits = c(3,7)) + 
-  labs(x="",y="",title = "Interstate Presence and Number of Garden Centers")
+  labs(x="",y="",title = "Interstate presence and number of garden centers",
+       color="Garden \n Centers")
 
 ```
 
@@ -342,6 +348,7 @@ mod_smooth_estimates <- smooth_estimates(gam_mod) %>%
 mod_smooth_estimates_der <- derivatives(gam_mod,term = "s(year_zero)")
 ```
 
+[@gratia2023]
 
 ```{r}
 #| label: fig-time
