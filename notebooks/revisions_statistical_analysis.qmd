@@ -91,7 +91,7 @@ gam_mod_21 <- gam(mod_form_21,data=data_1,
 
 gam_mod_21_ests <- plot_model(gam_mod_21)$data %>%
   tibble() %>%
-  mutate(coeff = factor(c("Interstate Presence (Yes)","Garden Centers","Population","Interstate Presence (Yes) : Garden Centers"),levels=c("Interstate Presence (Yes) : Garden Centers","Population","Garden Centers","Interstate Presence (Yes)")))
+  mutate(coeff = factor(c("IS Presence (Yes)","Garden Centers","Population","IS Presence (Yes) : Garden Centers"),levels=c("IS Presence (Yes) : Garden Centers","Population","Garden Centers","IS Presence (Yes)")))
 
 gam_mod_21_ests %>%
   ggplot(aes(x=log(estimate),y=coeff)) + 
@@ -120,7 +120,7 @@ gam_mod_21_ests %>%
 
 gam_mod_21_summ <- summary(gam_mod_21)
 
-results_df <- tibble(Coefficient = c("Intercept","Interstate Presence - Yes","Garden Centers","Population (log)","Interstate Presence - Yes : Garden Centers"),
+results_df <- tibble(Coefficient = c("Intercept","IS Presence - Yes","Garden Centers","Population (log)","IS Presence - Yes : Garden Centers"),
                      Estimate = gam_mod_21_summ$p.coeff,
                      SE = gam_mod_21_summ$se[1:5],
                      `p-value` = gam_mod_21_summ$p.pv)
