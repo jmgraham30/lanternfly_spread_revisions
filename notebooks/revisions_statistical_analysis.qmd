@@ -306,7 +306,7 @@ mod_smooth_estimates_der <- derivatives(gam_mod,term = "s(year_zero)")
 
 ```{r}
 #| label: fig-time
-#| fig-cap: Partial effect plot for the log odds of infestation over time from 2014 - 2021.
+#| fig-cap: Partial effect plot for the log-odds of infestation over time from 2014 - 2021.
 
 
 mod_smooth_estimates %>%
@@ -319,7 +319,7 @@ mod_smooth_estimates %>%
 
 ```{r}
 #| label: fig-time-deriv
-#| fig-cap: Time rate of change (i.e., first derivative) of partial effect of the log odds of infestation over time from 2014 - 2021. 
+#| fig-cap: Time rate of change (i.e., first derivative) of partial effect of the log-odds of infestation over time from 2014 - 2021. 
 
 mod_smooth_estimates_der %>%
   ggplot(aes(x=data + 2014,y=derivative)) + 
