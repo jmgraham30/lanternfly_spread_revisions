@@ -128,7 +128,7 @@ performance::check_autocorrelation(full_model_gam)
 acf(residuals(full_model_gam))
 
 # aggregating residuals by time
-res_agg = recalculateResiduals(full_res, group = data_2_temporal$year)
+res_agg <- recalculateResiduals(full_res, group = data_2_temporal$year)
 
 testTemporalAutocorrelation(res_agg,time=unique(data_2_temporal$year))
 
@@ -195,7 +195,7 @@ performance::check_autocorrelation(full_model_gam)
 acf(residuals(full_model_gam))
 
 # aggregating residuals by time
-res_agg = recalculateResiduals(full_res, group = data_2_temporal$year)
+res_agg <- recalculateResiduals(full_res, group = data_2_temporal$year)
 
 testTemporalAutocorrelation(res_agg,time=unique(data_2_temporal$year))
 
