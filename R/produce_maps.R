@@ -218,3 +218,18 @@ map_20_cols
 map_21_cols
 
 
+map_22 <- obtain_plot(i22,"i22")
+
+map_23 <- obtain_plot(i23,"i23")
+
+map_24 <- obtain_plot(i24,"i24")
+
+map_25 <- obtain_plot(i25,"i25")
+
+map_22
+
+map_23
+
+map_24
+
+map_25
