@@ -43,6 +43,7 @@ glimpse(data_to_map_166_inf)
 
 obtain_plot_pairs <- function(y_val,y_val_chr,
                               yr_val,yr_val_chr,
+                              acc_val,acc_val_chr,
                               data_to_map_val = data_to_map_166_inf){
   
   y_val <- enquo(y_val)
@@ -140,3 +141,86 @@ obtain_plot_accuracy <- function(y_val,y_val_chr,
   return(p_accuracy)
   
 }
+
+
+obtain_plot_cols <- function(y_val,y_val_chr,
+                              yr_val,yr_val_chr,
+                              acc_val,acc_val_chr,
+                              data_to_map_val = data_to_map_166_inf){
+  
+  y_val <- enquo(y_val)
+  t_val <- paste0("20",str_sub(y_val_chr,2,-1))
+  
+  yr_val <- enquo(yr_val)
+  
+  acc_val <- enquo(acc_val)
+  
+  p_infested <- ggplot() + 
+    geom_polygon(data=states,
+                 aes(long,lat,group=group),
+                 fill="white",color="black") + 
+    geom_polygon(data=data_to_map_val,
+                 aes(long, lat, group = group, fill = as.character(!!yr_val)),
+                 color="black",linewidth=0.2) +
+    scale_fill_discrete(name="Infested",type=c("white","darkgreen")) + 
+    labs(title = t_val, x = "", y= "") + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          legend.position = "none",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+  
+  p_pred <-  ggplot() +
+    geom_polygon(data=states,
+                 aes(long,lat,group=group),
+                 fill="white",color="black") + 
+    geom_polygon(data=data_to_map_val,
+                 mapping = aes(long, lat, group = group, fill = !!y_val),
+                 color="black",linewidth=0.2) +
+    scale_fill_continuous(name="Proportion", 
+                          low = "white", 
+                          high = "darkgreen",
+                          limits = c(0,1)) + 
+    labs(title = "", x = "", y= "") + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          legend.position = "none",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+  
+  p_accuracy <-  ggplot() +
+    geom_polygon(data=states,
+                 aes(long,lat,group=group),
+                 fill="white",color="black") + 
+    geom_polygon(data=data_to_map_val,
+                 mapping = aes(long, lat, group = group, fill = !!acc_val),
+                 color="black",linewidth=0.2) +
+    scale_fill_continuous(name="Accuracy", 
+                          low = "white", 
+                          high = "darkblue",
+                          limits = c(0,100)) + 
+    labs(title = "", x = "", y= "") + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          legend.position = "none",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+  
+  
+  p <- (p_infested / p_pred / p_accuracy)
+  
+  #ggsave(paste0("./Maps/map_",t_val,".jpg"),plot=p)
+  
+  return(p)
+  
+}
+
