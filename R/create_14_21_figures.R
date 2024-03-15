@@ -94,7 +94,7 @@ obtain_plot_pairs <- function(y_val,y_val_chr,
   
   p <- (p_infested / p_pred)
   
-  #ggsave(paste0("./Maps/map_",t_val,".jpg"),plot=p)
+  ggsave(paste0("maps/map_pair_",t_val,".jpg"),plot=p,width=7,height=14)
   
   return(p)
   
@@ -136,7 +136,7 @@ obtain_plot_accuracy <- function(y_val,y_val_chr,
           plot.title = element_text(hjust = 0.5))
   
   
-  #ggsave(paste0("./Maps/map_",t_val,".jpg"),plot=p)
+  ggsave(paste0("maps/map__acc_",t_val,".jpg"),plot=p_accuracy,width=7,height=7)
   
   return(p_accuracy)
   
@@ -218,7 +218,7 @@ obtain_plot_cols <- function(y_val,y_val_chr,
   
   p <- (p_infested / p_pred / p_accuracy)
   
-  #ggsave(paste0("./Maps/map_",t_val,".jpg"),plot=p)
+  ggsave(paste0("maps/map_col_",t_val,".jpg"),plot=p,width=7,height=21)
   
   return(p)
   

@@ -43,7 +43,7 @@ obtain_plot <- function(y_val,y_val_chr,data_to_map_val = data_to_map){
           axis.text.y = element_blank(),
           plot.title = element_text(hjust = 0.5))
   
-  #ggsave(paste0("./Maps/map_",t_val,".jpg"),plot=p)
+  ggsave(paste0("maps/map_preds_",t_val,".jpg"),plot=p,width=7,height=7)
   
   return(p)
   
